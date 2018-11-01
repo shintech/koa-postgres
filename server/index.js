@@ -2,6 +2,7 @@ const Koa = require('koa')
 const compress = require('koa-compress')
 const bodyParser = require('koa-bodyparser')
 const router = require('./router')
+const app = require('./app')
 
 module.exports = ({ pkg, db, logger, port, environment, postgresURI, root }) => {
   const server = new Koa()
@@ -56,23 +57,5 @@ module.exports = ({ pkg, db, logger, port, environment, postgresURI, root }) => 
     ctx.body = '404 - Not found'
   })
 
-  const app = server.listen(port)
-
-  app.on('listening', () => {
-    logger.info(`${pkg.name} - version: ${pkg.version} - listening on port ${port}...`)
-  })
-
-  app.on('close', () => {
-    logger.warn('Shutting down server...')
-
-    db.end()
-
-    logger.info('Goodbye...')
-  })
-
-  process.on('SIGINT', () => {
-    app.close()
-  })
-
-  return app
+  return (environment) === 'test' ? app({ db, logger, server, port, pkg }).listen(port) : server
 }
